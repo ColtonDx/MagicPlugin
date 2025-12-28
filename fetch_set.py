@@ -9,6 +9,7 @@ Example: python fetch_set.py tla --download-images
 import requests
 import sys
 import os
+import time
 from pathlib import Path
 
 # Output file to write cards to (in ./sets/)
@@ -149,6 +150,8 @@ def fetch_set_cards(set_code):
             if data.get("has_more"):
                 params["page"] = page + 1
                 page += 1
+                # Rate limit: 100ms delay between requests (10 requests per second)
+                time.sleep(0.1)
             else:
                 has_more = False
         except requests.exceptions.Timeout:
@@ -557,6 +560,10 @@ def download_set_images(set_code, cards):
                 skipped += 1
             else:
                 failed += 1
+        
+        # Rate limit: 100ms delay between image downloads
+        if i < len(cards):
+            time.sleep(0.1)
     
     print(f"\n=== Image Download Summary ===")
     print(f"Successful: {successful}")
