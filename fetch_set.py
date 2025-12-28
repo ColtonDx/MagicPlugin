@@ -282,6 +282,44 @@ def update_list_file(set_code):
         print(f"Updated ListOfCardDataFiles.txt to include {set_filename}")
 
 
+def deduplicate_output_file(output_file):
+    """
+    Deduplicate lines in the output file.
+    Preserves header (first line) and blank lines, deduplicates card data.
+    """
+    with open(output_file, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+    
+    if not lines:
+        return
+    
+    # Preserve header
+    header = lines[0]
+    
+    # Find where the actual card data starts (after blank lines)
+    data_start = 1
+    blank_lines = []
+    while data_start < len(lines) and lines[data_start].strip() == "":
+        blank_lines.append(lines[data_start])
+        data_start += 1
+    
+    # Deduplicate card data while preserving order
+    seen = set()
+    unique_cards = []
+    for line in lines[data_start:]:
+        if line not in seen:
+            seen.add(line)
+            unique_cards.append(line)
+    
+    # Write back
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(header)
+        f.writelines(blank_lines)
+        f.writelines(unique_cards)
+    
+    print(f"Deduplicated {output_file}")
+
+
 def get_image_url(card):
     """
     Get the image URL for a card.
@@ -394,6 +432,9 @@ def main():
             sys.exit(1)
         
         output_file, was_newly_created = write_set_file(set_code, cards)
+        
+        # Deduplicate the output file
+        deduplicate_output_file(output_file)
         
         # Only update list file if we created a new file
         if was_newly_created:
