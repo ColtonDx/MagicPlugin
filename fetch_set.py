@@ -42,12 +42,15 @@ def convert_mana_cost(cost_string):
 
 def get_color_string(colors):
     """
-    Convert color array to space-separated string.
-    ["W", "U"] -> "W U"
+    Convert color array to space-separated string in WUBRG order.
+    ["U", "W"] -> "W U"
     """
     if not colors:
         return ""
-    return " ".join(colors)
+    # WUBRG order
+    order = {"W": 0, "U": 1, "B": 2, "R": 3, "G": 4}
+    sorted_colors = sorted(colors, key=lambda x: order.get(x, 5))
+    return " ".join(sorted_colors)
 
 
 def get_color_id(colors):
