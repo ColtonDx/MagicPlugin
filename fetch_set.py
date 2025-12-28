@@ -199,7 +199,7 @@ def write_set_file(set_code, cards):
     # Check if file exists
     file_exists = output_file.exists()
     
-    with open(output_file, "a" if file_exists else "w", encoding="utf-8-sig") as f:
+    with open(output_file, "a" if file_exists else "w", encoding="utf-8") as f:
         # Write header and blank lines only if creating new file
         if not file_exists:
             header = "Name\tSet\tImageFile\tActualSet\tColor\tColorID\tCost\tManaValue\tType\tPower\tToughness\tLoyalty\tRarity\tDraftQualities\tSound\tScript\tText"
