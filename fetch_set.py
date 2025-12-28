@@ -66,6 +66,37 @@ def get_color_id(colors):
     return "".join(sorted_colors)
 
 
+def get_sound(type_line):
+    """
+    Get sound based on card type.
+    Creature takes priority - if a card is a creature, it always gets creature sound.
+    For non-creatures, only sets sound if there is exactly one clear type.
+    Returns the type name if found, empty string if unclear or multiple types.
+    """
+    if not type_line:
+        return ""
+    
+    type_line_lower = type_line.lower()
+    
+    # Creature takes priority
+    if "creature" in type_line_lower:
+        return "creature"
+    
+    sound_types = ["artifact", "instant", "enchantment", "sorcery", "land"]
+    
+    # Find which types match
+    matched_types = []
+    for sound_type in sound_types:
+        if sound_type in type_line_lower:
+            matched_types.append(sound_type)
+    
+    # Only set sound if exactly one type matched
+    if len(matched_types) == 1:
+        return matched_types[0]
+    
+    return ""
+
+
 def fetch_set_cards(set_code):
     """
     Fetch all cards from a specific set using Scryfall API.
@@ -139,6 +170,8 @@ def format_card(card, set_code):
     oracle_text = re.sub(r'\s*\([^)]*\)\s*', ' ', oracle_text).strip()
     oracle_text = oracle_text.replace("\n", " | ")
     
+    sound = get_sound(type_line)
+    
     # Format: Name, Set, ImageFile, ActualSet, Color, ColorID, Cost, ManaValue, Type, Power, Toughness, Loyalty, Rarity, DraftQualities, Sound, Script, Text
     fields = [
         name,
@@ -155,7 +188,7 @@ def format_card(card, set_code):
         loyalty,
         rarity,
         "",  # DraftQualities
-        "",  # Sound
+        sound,  # Sound
         "",  # Script
         oracle_text
     ]
