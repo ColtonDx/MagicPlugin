@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 """
 Fetch Magic: The Gathering cards from Scryfall and format them for Lackey CCG.
-Usage: python fetch_set.py <set_code> [--download-images]
-Example: python fetch_set.py tla
-Example: python fetch_set.py tla --download-images
+Reads configuration from config.txt in the same folder as this script.
 """
 
 import sys
@@ -29,11 +27,56 @@ import requests
 from PIL import Image
 from io import BytesIO
 
-# Output file to write cards to (in ./sets/)
-OUTPUT_FILE = "custom.txt"  # Set this to a filename to write to existing file, e.g., "custom.txt"
 
-# Download images by default
-DOWNLOAD_IMAGES = False  # Set to True to download images, or use --download-images flag
+def load_config():
+    """
+    Load configuration from config.txt in the same directory as the script.
+    Returns tuple: (output_folder, set_codes_list, download_images)
+    """
+    config_file = Path(__file__).parent / "config.txt"
+    
+    # Default values
+    output_folder = "sets"
+    set_codes = []
+    download_images = False
+    
+    if not config_file.exists():
+        print(f"WARNING: config.txt not found at {config_file}")
+        print("Using default values: output_folder=sets, set_codes=[], download_images=False")
+        return output_folder, set_codes, download_images
+    
+    try:
+        with open(config_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and empty lines
+                if not line or line.startswith("#"):
+                    continue
+                
+                if "=" not in line:
+                    continue
+                
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip()
+                
+                if key == "output_folder":
+                    output_folder = value
+                elif key == "set_codes":
+                    # Parse comma-separated set codes
+                    set_codes = [code.strip() for code in value.split(",") if code.strip()]
+                elif key == "download_images":
+                    download_images = value.lower() in ("true", "yes", "1")
+    except Exception as e:
+        print(f"ERROR reading config.txt: {e}")
+        print("Using default values")
+        return "sets", [], False
+    
+    return output_folder, set_codes, download_images
+
+
+# Global variables loaded from config
+OUTPUT_FOLDER, SET_CODES, DOWNLOAD_IMAGES = load_config()
 
 
 def convert_mana_cost(cost_string):
@@ -326,11 +369,11 @@ def format_back_card(card, set_code):
 def write_set_file(set_code, cards):
     """
     Write formatted cards to a set file.
-    If OUTPUT_FILE is set, appends to that file (or creates it).
+    Uses OUTPUT_FOLDER from config.txt.
     Otherwise, creates a new file named {set_code}.txt
     Returns tuple: (output_file, was_newly_created)
     """
-    output_dir = Path("sets")
+    output_dir = Path(OUTPUT_FOLDER)
     output_dir.mkdir(exist_ok=True)
     
     # Sort cards by collector number (numerically aware)
@@ -353,11 +396,8 @@ def write_set_file(set_code, cards):
     
     cards = sorted(cards, key=sort_key)
     
-    # Determine output file
-    if OUTPUT_FILE:
-        output_file = output_dir / OUTPUT_FILE
-    else:
-        output_file = output_dir / f"{set_code.lower()}.txt"
+    # Create output file named after the set code
+    output_file = output_dir / f"{set_code.lower()}.txt"
     
     # Check if file exists
     file_exists = output_file.exists()
@@ -607,41 +647,51 @@ def download_set_images(set_code, cards):
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python fetch_set.py <set_code> [--download-images]")
-        print("Example: python fetch_set.py tla")
-        print("Example: python fetch_set.py tla --download-images")
+    """
+    Process all set codes from config.txt.
+    """
+    if not SET_CODES:
+        print("ERROR: No set codes defined in config.txt")
+        print("Please add set_codes to config.txt (e.g., set_codes=tla,lci)")
         sys.exit(1)
     
-    set_code = sys.argv[1]
-    download_images = DOWNLOAD_IMAGES or "--download-images" in sys.argv
+    print(f"Fetching {len(SET_CODES)} set(s): {', '.join(SET_CODES)}")
+    print(f"Output folder: {OUTPUT_FOLDER}")
+    print(f"Download images: {DOWNLOAD_IMAGES}\n")
     
-    try:
-        cards = fetch_set_cards(set_code)
-        if not cards:
-            print(f"No cards found for set: {set_code}")
-            sys.exit(1)
+    for i, set_code in enumerate(SET_CODES, 1):
+        print(f"[{i}/{len(SET_CODES)}] Processing {set_code}...")
+        print("=" * 50)
         
-        output_file, was_newly_created = write_set_file(set_code, cards)
-        
-        # Deduplicate the output file
-        deduplicate_output_file(output_file)
-        
-        # Only update list file if we created a new file
-        if was_newly_created:
-            update_list_file(set_code)
-        
-        if download_images:
-            download_set_images(set_code, cards)
-        
-        print("Done!")
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching from Scryfall: {e}")
-        sys.exit(1)
-    except Exception as e:
-        print(f"Error: {e}")
-        sys.exit(1)
+        try:
+            cards = fetch_set_cards(set_code)
+            if not cards:
+                print(f"No cards found for set: {set_code}\n")
+                continue
+            
+            output_file, was_newly_created = write_set_file(set_code, cards)
+            
+            # Deduplicate the output file
+            deduplicate_output_file(output_file)
+            
+            # Only update list file if we created a new file
+            if was_newly_created:
+                update_list_file(set_code)
+            
+            if DOWNLOAD_IMAGES:
+                download_set_images(set_code, cards)
+            
+            print(f"Completed {set_code}!\n")
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching from Scryfall for {set_code}: {e}\n")
+            continue
+        except Exception as e:
+            print(f"Error processing {set_code}: {e}\n")
+            continue
+    
+    print("=" * 50)
+    print("All sets processed!")
 
 
 if __name__ == "__main__":
