@@ -11,8 +11,17 @@ import sys
 import os
 import time
 from pathlib import Path
-from PIL import Image
-from io import BytesIO
+
+# Auto-install PIL if missing
+try:
+    from PIL import Image
+    from io import BytesIO
+except ImportError:
+    import subprocess
+    print("Installing Pillow (PIL)...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
+    from PIL import Image
+    from io import BytesIO
 
 # Output file to write cards to (in ./sets/)
 OUTPUT_FILE = "custom.txt"  # Set this to a filename to write to existing file, e.g., "custom.txt"
