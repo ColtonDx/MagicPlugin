@@ -5,6 +5,7 @@
 <filetoinclude>modern-core-sets2.txt</filetoinclude>
 <filetoinclude>premodern-expansions.txt</filetoinclude>
 <filetoinclude>premodern-expansions2.txt</filetoinclude>
+<filetoinclude>custom.txt</filetoinclude>
 <filetoinclude>modern-expansions.txt</filetoinclude>
 <filetoinclude>modern-expansions2.txt</filetoinclude>
 <filetoinclude>modern-expansions3.txt</filetoinclude>
@@ -16,7 +17,5 @@
 <filetoinclude>reprint-only-sets.txt</filetoinclude>
 <filetoinclude>promos-and-alternates.txt</filetoinclude>
 <filetoinclude>custom-tokens-for-lackeyccg.txt</filetoinclude>
-<filetoinclude>custom.txt</filetoinclude>
-
 
 </listofcarddatafiles>

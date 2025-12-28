@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 # Output file to write cards to (in ./sets/)
-OUTPUT_FILE = None  # Set this to a filename to write to existing file, e.g., "custom.txt"
+OUTPUT_FILE = "custom.txt"  # Set this to a filename to write to existing file, e.g., "custom.txt"
 
 # Download images by default
 DOWNLOAD_IMAGES = False  # Set to True to download images, or use --download-images flag
