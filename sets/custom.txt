@@ -1,0 +1,2 @@
+Name	Set	ImageFile	ActualSet	Color	ColorID	Cost	ManaValue	Type	Power	Toughness	Loyalty	Rarity	DraftQualities	Sound	Script	Text
+
