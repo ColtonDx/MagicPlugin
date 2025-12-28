@@ -7,7 +7,20 @@ Reads configuration from config.txt in the same folder as this script.
 import sys
 import os
 import time
+import logging
 from pathlib import Path
+
+# Setup logging
+log_file = Path(__file__).parent / "fetch.log"
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Auto-install missing dependencies
 required_packages = {
@@ -41,8 +54,8 @@ def load_config():
     download_images = False
     
     if not config_file.exists():
-        print(f"WARNING: config.txt not found at {config_file}")
-        print("Using default values: output_file=custom.txt, set_codes=[], download_images=False")
+        logger.warning(f"config.txt not found at {config_file}")
+        logger.warning("Using default values: output_file=custom.txt, set_codes=[], download_images=False")
         return output_file, set_codes, download_images
     
     try:
@@ -68,8 +81,8 @@ def load_config():
                 elif key == "download_images":
                     download_images = value.lower() in ("true", "yes", "1")
     except Exception as e:
-        print(f"ERROR reading config.txt: {e}")
-        print("Using default values")
+        logger.error(f"Error reading config.txt: {e}")
+        logger.warning("Using default values")
         return "custom.txt", [], False
     
     return output_file, set_codes, download_images
@@ -184,7 +197,7 @@ def fetch_set_cards(set_code):
     """
     Fetch all cards from a specific set using Scryfall API.
     """
-    print(f"Fetching cards for set: {set_code}")
+    logger.info(f"Fetching cards for set: {set_code}")
     
     url = f"https://api.scryfall.com/cards/search"
     params = {
@@ -197,7 +210,7 @@ def fetch_set_cards(set_code):
     page = 1
     
     while has_more:
-        print(f"  Fetching page {page}...")
+        logger.info(f"  Fetching page {page}...")
         try:
             response = requests.get(url, params=params, timeout=30)
             response.raise_for_status()
@@ -205,7 +218,7 @@ def fetch_set_cards(set_code):
             
             page_cards = data.get("data", [])
             all_cards.extend(page_cards)
-            print(f"  Got {len(page_cards)} cards (total: {len(all_cards)})")
+            logger.info(f"  Got {len(page_cards)} cards (total: {len(all_cards)})")
             
             if data.get("has_more"):
                 params["page"] = page + 1
@@ -215,13 +228,13 @@ def fetch_set_cards(set_code):
             else:
                 has_more = False
         except requests.exceptions.Timeout:
-            print("  ERROR: Request timed out!")
+            logger.error("  ERROR: Request timed out!")
             raise
         except requests.exceptions.RequestException as e:
-            print(f"  ERROR: {e}")
+            logger.error(f"  ERROR: {e}")
             raise
     
-    print(f"Found {len(all_cards)} cards")
+    logger.info(f"Found {len(all_cards)} cards")
     return all_cards
 
 
@@ -416,10 +429,9 @@ def write_set_file(set_code, cards):
                 f.write(back_card + "\n")
     
     if file_exists:
-        print(f"Appended {len(cards)} cards to {output_file}")
-
+        logger.info(f"Appended {len(cards)} cards to {output_file}")
     else:
-        print(f"Created {output_file} with {len(cards)} cards")
+        logger.info(f"Created {output_file} with {len(cards)} cards")
     
     return output_file, not file_exists
 
@@ -437,7 +449,7 @@ def update_list_file(set_code):
     
     # Check if already included
     if f"<filetoinclude>{set_filename}</filetoinclude>" in content:
-        print(f"{set_filename} already in ListOfCardDataFiles.txt")
+        logger.info(f"{set_filename} already in ListOfCardDataFiles.txt")
         return
     
     # Add before closing tag
@@ -449,7 +461,7 @@ def update_list_file(set_code):
         with open(list_file, "w", encoding="utf-8") as f:
             f.write(content)
         
-        print(f"Updated ListOfCardDataFiles.txt to include {set_filename}")
+        logger.info(f"Updated ListOfCardDataFiles.txt to include {set_filename}")
 
 
 def deduplicate_output_file(output_file):
@@ -499,7 +511,7 @@ def deduplicate_output_file(output_file):
         f.writelines(blank_lines)
         f.writelines(unique_cards)
     
-    print(f"Deduplicated {output_file}")
+    logger.info(f"Deduplicated {output_file}")
 
 
 def get_image_url(card):
@@ -623,7 +635,7 @@ def download_set_images(set_code, cards):
     
     for i, card in enumerate(cards, 1):
         card_name = card.get("name", "Unknown")
-        print(f"[{i}/{len(cards)}] {card_name}")
+        logger.info(f"[{i}/{len(cards)}] {card_name}")
         
         if download_card_image(card, set_code, base_path):
             successful += 1
@@ -638,34 +650,42 @@ def download_set_images(set_code, cards):
         if i < len(cards):
             time.sleep(0.1)
     
-    print(f"\n=== Image Download Summary ===")
-    print(f"Successful: {successful}")
-    print(f"Failed: {failed}")
-    print(f"Skipped (no image): {skipped}")
-    print(f"Images saved to: sets/setimages/{set_code.lower()}/")
+    logger.info(f"\n=== Image Download Summary ===")
+    logger.info(f"Successful: {successful}")
+    logger.info(f"Failed: {failed}")
+    logger.info(f"Skipped (no image): {skipped}")
+    logger.info(f"Images saved to: sets/setimages/{set_code.lower()}/")
 
 
 def main():
     """
     Process all set codes from config.txt.
     """
+    logger.info("=" * 60)
+    logger.info("Magic: The Gathering Card Fetcher - Starting")
+    logger.info("=" * 60)
+    
     if not SET_CODES:
-        print("ERROR: No set codes defined in config.txt")
-        print("Please add set_codes to config.txt (e.g., set_codes=tla,lci)")
+        logger.error("No set codes defined in config.txt")
+        logger.error("Please add set_codes to config.txt (e.g., set_codes=tla,lci)")
         sys.exit(1)
     
-    print(f"Fetching {len(SET_CODES)} set(s): {', '.join(SET_CODES)}")
-    print(f"Output file: sets/{OUTPUT_FILE}")
-    print(f"Download images: {DOWNLOAD_IMAGES}\n")
+    logger.info(f"Fetching {len(SET_CODES)} set(s): {', '.join(SET_CODES)}")
+    logger.info(f"Output file: sets/{OUTPUT_FILE}")
+    logger.info(f"Download images: {DOWNLOAD_IMAGES}\n")
+    
+    successful_sets = 0
+    failed_sets = 0
     
     for i, set_code in enumerate(SET_CODES, 1):
-        print(f"[{i}/{len(SET_CODES)}] Processing {set_code}...")
-        print("=" * 50)
+        logger.info(f"[{i}/{len(SET_CODES)}] Processing {set_code}...")
+        logger.info("=" * 50)
         
         try:
             cards = fetch_set_cards(set_code)
             if not cards:
-                print(f"No cards found for set: {set_code}\n")
+                logger.warning(f"No cards found for set: {set_code}")
+                failed_sets += 1
                 continue
             
             output_file, was_newly_created = write_set_file(set_code, cards)
@@ -680,17 +700,24 @@ def main():
             if DOWNLOAD_IMAGES:
                 download_set_images(set_code, cards)
             
-            print(f"Completed {set_code}!\n")
+            logger.info(f"✓ Completed {set_code}!")
+            successful_sets += 1
             
         except requests.exceptions.RequestException as e:
-            print(f"Error fetching from Scryfall for {set_code}: {e}\n")
+            logger.error(f"Error fetching from Scryfall for {set_code}: {e}")
+            failed_sets += 1
             continue
         except Exception as e:
-            print(f"Error processing {set_code}: {e}\n")
+            logger.error(f"Error processing {set_code}: {e}", exc_info=True)
+            failed_sets += 1
             continue
     
-    print("=" * 50)
-    print("All sets processed!")
+    logger.info("=" * 60)
+    logger.info("All sets processed!")
+    logger.info(f"Successful: {successful_sets}/{len(SET_CODES)}")
+    logger.info(f"Failed: {failed_sets}/{len(SET_CODES)}")
+    logger.info(f"Log file: {log_file}")
+    logger.info("=" * 60)
 
 
 if __name__ == "__main__":
