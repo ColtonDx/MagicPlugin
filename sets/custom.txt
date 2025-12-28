@@ -1,2 +1,4 @@
 Name	Set	ImageFile	ActualSet	Color	ColorID	Cost	ManaValue	Type	Power	Toughness	Loyalty	Rarity	DraftQualities	Sound	Script	Text
 
+
+Aang, the Last Airbender	tla	tla/4	tla	  W	 W	{3}{W}	4	Legendary Creature - Human Avatar Ally	3	2		M		creature		Flying | When Aang enters, airbend up to one other target nonland permanent. | Whenever you cast a Lesson spell, Aang gains lifelink until end of turn.
