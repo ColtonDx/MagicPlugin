@@ -10,8 +10,16 @@ import time
 import logging
 from pathlib import Path
 
+# Determine script/executable directory for both Python and PyInstaller
+if getattr(sys, 'frozen', False):
+    # Running as compiled executable
+    script_dir = Path(sys.executable).parent
+else:
+    # Running as regular Python script
+    script_dir = Path(__file__).parent
+
 # Setup logging
-log_file = Path(__file__).parent / "fetch.log"
+log_file = script_dir / "fetch.log"
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -44,9 +52,10 @@ from io import BytesIO
 def load_config():
     """
     Load configuration from config.txt in the same directory as the script.
+    Works with both regular Python and PyInstaller-compiled executables.
     Returns tuple: (output_file, set_codes_list, download_images)
     """
-    config_file = Path(__file__).parent / "config.txt"
+    config_file = script_dir / "config.txt"
     
     # Default values
     output_file = "custom.txt"
