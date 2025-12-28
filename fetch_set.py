@@ -177,26 +177,33 @@ def format_card(card, set_code):
     is_double_faced = "card_faces" in card and len(card["card_faces"]) >= 2
     if is_double_faced:
         image_file = f"{set_code}/{collector_number}a"
+        # For double-faced cards, get attributes from the first face
+        front_face = card["card_faces"][0]
+        colors = front_face.get("colors", [])
+        cost = convert_mana_cost(front_face.get("mana_cost", ""))
+        type_line = front_face.get("type_line", "")
+        power = front_face.get("power", "")
+        toughness = front_face.get("toughness", "")
+        loyalty = front_face.get("loyalty", "")
+        oracle_text = front_face.get("oracle_text", "")
     else:
         image_file = f"{set_code}/{collector_number}"
+        # For single-faced cards, get attributes from card root
+        colors = card.get("colors", [])
+        cost = convert_mana_cost(card.get("mana_cost", ""))
+        type_line = card.get("type_line", "")
+        power = card.get("power", "")
+        toughness = card.get("toughness", "")
+        loyalty = card.get("loyalty", "")
+        oracle_text = card.get("oracle_text", "")
     
-    colors = card.get("colors", [])
     color_string = get_color_string(colors)
     color_id = get_color_id(colors)
     
-    cost = convert_mana_cost(card.get("mana_cost", ""))
     mana_value = card.get("cmc", 0)
-    
-    type_line = card.get("type_line", "")
-    
-    power = card.get("power", "")
-    toughness = card.get("toughness", "")
-    loyalty = card.get("loyalty", "")
     
     rarity = card.get("rarity", "").upper()[0] if card.get("rarity") else ""
     
-    # Get oracle text and remove reminder text (text in parentheses)
-    oracle_text = card.get("oracle_text", "")
     # Remove reminder text in parentheses
     import re
     oracle_text = re.sub(r'\s*\([^)]*\)\s*', ' ', oracle_text).strip()
