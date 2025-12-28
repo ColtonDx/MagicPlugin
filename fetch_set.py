@@ -165,10 +165,17 @@ def fetch_set_cards(set_code):
 def format_card(card, set_code):
     """
     Format a single card for Lackey CCG output.
+    For double-faced cards, appends 'a' to collector number for front face.
     """
     name = card.get("name", "")
     collector_number = card.get("collector_number", "")
-    image_file = f"{set_code}/{collector_number}"
+    
+    # For double-faced cards, append 'a' to the front face image file
+    is_double_faced = "card_faces" in card and len(card["card_faces"]) >= 2
+    if is_double_faced:
+        image_file = f"{set_code}/{collector_number}a"
+    else:
+        image_file = f"{set_code}/{collector_number}"
     
     colors = card.get("colors", [])
     color_string = get_color_string(colors)
@@ -198,6 +205,76 @@ def format_card(card, set_code):
     # Format: Name, Set, ImageFile, ActualSet, Color, ColorID, Cost, ManaValue, Type, Power, Toughness, Loyalty, Rarity, DraftQualities, Sound, Script, Text
     fields = [
         name,
+        set_code,
+        image_file,
+        set_code,
+        color_string,
+        color_id,
+        cost,
+        str(int(mana_value)),
+        type_line,
+        power,
+        toughness,
+        loyalty,
+        rarity,
+        "",  # DraftQualities
+        sound,  # Sound
+        script,  # Script
+        oracle_text
+    ]
+    
+    return "\t".join(fields)
+
+
+def format_back_card(card, set_code):
+    """
+    Format the back side of a double-faced card.
+    Name is prefixed with [set_code].
+    Image file uses collector_numberb.
+    """
+    if "card_faces" not in card or len(card["card_faces"]) < 2:
+        return None
+    
+    back_face = card["card_faces"][1]
+    collector_number = card.get("collector_number", "")
+    
+    # Name with set code prefix
+    back_name = f"[{set_code}] {back_face.get('name', '')}"
+    image_file = f"{set_code}/{collector_number}b"
+    
+    # Get colors from back face
+    colors = back_face.get("colors", [])
+    color_string = get_color_string(colors)
+    color_id = get_color_id(colors)
+    
+    # Back face might have different mana cost
+    cost = convert_mana_cost(back_face.get("mana_cost", ""))
+    
+    # Use original card's mana value (cmc is same for both sides)
+    mana_value = card.get("cmc", 0)
+    
+    type_line = back_face.get("type_line", "")
+    
+    power = back_face.get("power", "")
+    toughness = back_face.get("toughness", "")
+    loyalty = back_face.get("loyalty", "")
+    
+    rarity = card.get("rarity", "").upper()[0] if card.get("rarity") else ""
+    
+    # Get oracle text from back face
+    oracle_text = back_face.get("oracle_text", "")
+    import re
+    oracle_text = re.sub(r'\s*\([^)]*\)\s*', ' ', oracle_text).strip()
+    oracle_text = oracle_text.replace("\n", " | ")
+    
+    sound = get_sound(type_line)
+    
+    # Back side doesn't have script (no need to spawn another side)
+    script = ""
+    
+    # Format: Name, Set, ImageFile, ActualSet, Color, ColorID, Cost, ManaValue, Type, Power, Toughness, Loyalty, Rarity, DraftQualities, Sound, Script, Text
+    fields = [
+        back_name,
         set_code,
         image_file,
         set_code,
@@ -268,6 +345,10 @@ def write_set_file(set_code, cards):
         # Write cards
         for card in cards:
             f.write(format_card(card, set_code.lower()) + "\n")
+            # Also write back side of double-faced cards
+            back_card = format_back_card(card, set_code.lower())
+            if back_card:
+                f.write(back_card + "\n")
     
     if file_exists:
         print(f"Appended {len(cards)} cards to {output_file}")
