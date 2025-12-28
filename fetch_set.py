@@ -165,6 +165,7 @@ def write_set_file(set_code, cards):
     Write formatted cards to a set file.
     If OUTPUT_FILE is set, appends to that file (or creates it).
     Otherwise, creates a new file named {set_code}.txt
+    Returns tuple: (output_file, was_newly_created)
     """
     output_dir = Path("sets")
     output_dir.mkdir(exist_ok=True)
@@ -214,7 +215,7 @@ def write_set_file(set_code, cards):
     else:
         print(f"Created {output_file} with {len(cards)} cards")
     
-    return output_file
+    return output_file, not file_exists
 
 
 def update_list_file(set_code):
@@ -356,8 +357,11 @@ def main():
             print(f"No cards found for set: {set_code}")
             sys.exit(1)
         
-        write_set_file(set_code, cards)
-        update_list_file(set_code)
+        output_file, was_newly_created = write_set_file(set_code, cards)
+        
+        # Only update list file if we created a new file
+        if was_newly_created:
+            update_list_file(set_code)
         
         if download_images:
             download_set_images(set_code, cards)
