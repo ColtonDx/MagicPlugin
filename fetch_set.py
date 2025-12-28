@@ -66,6 +66,28 @@ def get_color_id(colors):
     return "".join(sorted_colors)
 
 
+def get_script(card, set_code):
+    """
+    Get script for the card.
+    For double-faced cards, creates a script to spawn the other side.
+    Format: <s><l>Create other side</l><f>/spawn [set_code] Other Face Name</f></s>
+    """
+    if "card_faces" not in card or len(card["card_faces"]) < 2:
+        return ""
+    
+    # Get the names of both faces
+    face_names = [face.get("name", "") for face in card["card_faces"]]
+    
+    # Determine which face is current (we format the first face)
+    # The script should spawn the second face
+    if len(face_names) >= 2:
+        other_face_name = face_names[1]
+        script = f"<s><l>Create other side</l><f>/spawn [{set_code}] {other_face_name}</f></s>"
+        return script
+    
+    return ""
+
+
 def get_sound(type_line):
     """
     Get sound based on card type.
@@ -171,6 +193,7 @@ def format_card(card, set_code):
     oracle_text = oracle_text.replace("\n", " | ")
     
     sound = get_sound(type_line)
+    script = get_script(card, set_code)
     
     # Format: Name, Set, ImageFile, ActualSet, Color, ColorID, Cost, ManaValue, Type, Power, Toughness, Loyalty, Rarity, DraftQualities, Sound, Script, Text
     fields = [
@@ -189,7 +212,7 @@ def format_card(card, set_code):
         rarity,
         "",  # DraftQualities
         sound,  # Sound
-        "",  # Script
+        script,  # Script
         oracle_text
     ]
     
