@@ -457,13 +457,10 @@ def get_image_url(card):
 def download_card_image(card, set_code, base_path):
     """
     Download a single card image.
+    For double-faced cards, downloads both sides with 'a' and 'b' suffixes.
     Returns True if successful, False otherwise.
     """
     collector_number = card.get("collector_number", "")
-    image_url = get_image_url(card)
-    
-    if not image_url:
-        return False
     
     # Determine if this is a token
     type_line = card.get("type_line", "").lower()
@@ -478,25 +475,62 @@ def download_card_image(card, set_code, base_path):
     
     set_dir.mkdir(parents=True, exist_ok=True)
     
-    # Build file path
-    file_path = set_dir / f"{collector_number}.jpg"
+    # Check if this is a double-faced card
+    is_double_faced = "card_faces" in card and len(card["card_faces"]) >= 2
     
-    # Skip if already exists
-    if file_path.exists():
-        return True
-    
-    # Download image
-    try:
-        response = requests.get(image_url, timeout=30)
-        response.raise_for_status()
+    if is_double_faced:
+        # Download both faces
+        success = True
+        for i, face in enumerate(card["card_faces"]):
+            suffix = chr(97 + i)  # 'a', 'b', 'c', etc.
+            image_url = face.get("image_uris", {}).get("normal")
+            
+            if not image_url:
+                success = False
+                continue
+            
+            file_path = set_dir / f"{collector_number}{suffix}.jpg"
+            
+            # Skip if already exists
+            if file_path.exists():
+                continue
+            
+            try:
+                response = requests.get(image_url, timeout=30)
+                response.raise_for_status()
+                
+                with open(file_path, "wb") as f:
+                    f.write(response.content)
+            except requests.exceptions.RequestException:
+                success = False
         
-        with open(file_path, "wb") as f:
-            f.write(response.content)
+        return success
+    else:
+        # Single-faced card
+        image_url = get_image_url(card)
         
-        return True
+        if not image_url:
+            return False
         
-    except requests.exceptions.RequestException:
-        return False
+        # Build file path
+        file_path = set_dir / f"{collector_number}.jpg"
+        
+        # Skip if already exists
+        if file_path.exists():
+            return True
+        
+        # Download image
+        try:
+            response = requests.get(image_url, timeout=30)
+            response.raise_for_status()
+            
+            with open(file_path, "wb") as f:
+                f.write(response.content)
+            
+            return True
+            
+        except requests.exceptions.RequestException:
+            return False
 
 
 def download_set_images(set_code, cards):
