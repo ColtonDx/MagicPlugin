@@ -11,6 +11,8 @@ import sys
 import os
 import time
 from pathlib import Path
+from PIL import Image
+from io import BytesIO
 
 # Output file to write cards to (in ./sets/)
 OUTPUT_FILE = "custom.txt"  # Set this to a filename to write to existing file, e.g., "custom.txt"
@@ -514,9 +516,13 @@ def download_card_image(card, set_code, base_path):
                 response = requests.get(image_url, timeout=30)
                 response.raise_for_status()
                 
-                with open(file_path, "wb") as f:
-                    f.write(response.content)
+                # Download and resize image
+                image = Image.open(BytesIO(response.content))
+                image = image.resize((312, 445), Image.Resampling.LANCZOS)
+                image.save(file_path, "JPEG")
             except requests.exceptions.RequestException:
+                success = False
+            except Exception:
                 success = False
         
         return success
