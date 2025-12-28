@@ -21,11 +21,11 @@ DOWNLOAD_IMAGES = False  # Set to True to download images, or use --download-ima
 def convert_mana_cost(cost_string):
     """
     Convert Scryfall mana cost format to Lackey format.
-    {2}{w}{u} -> {2}{w}{u}
+    {2}{w}{u} -> {2}{W}{U}
     """
     if not cost_string:
         return ""
-    # Scryfall already uses the format we need, just lowercase the letters
+    # Scryfall already uses the format we need, just uppercase the letters
     result = ""
     i = 0
     while i < len(cost_string):
@@ -33,7 +33,7 @@ def convert_mana_cost(cost_string):
             # Find closing bracket
             end = cost_string.index("}", i)
             mana_part = cost_string[i:end+1]
-            result += mana_part.lower()
+            result += mana_part.upper()
             i = end + 1
         else:
             i += 1
