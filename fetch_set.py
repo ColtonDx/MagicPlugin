@@ -285,6 +285,7 @@ def update_list_file(set_code):
 def deduplicate_output_file(output_file):
     """
     Deduplicate lines in the output file, keeping the latest entries.
+    Matches on: card name + set code + collector number.
     Preserves header (first line) and blank lines, deduplicates card data.
     """
     with open(output_file, "r", encoding="utf-8") as f:
@@ -303,13 +304,21 @@ def deduplicate_output_file(output_file):
         blank_lines.append(lines[data_start])
         data_start += 1
     
-    # Deduplicate card data while preserving order, keeping latest entries
-    seen = set()
+    # Deduplicate card data, keeping latest entries
+    # Match on: card name + image_file (which contains set_code/collector_number)
+    seen_keys = set()
     unique_cards = []
     for line in reversed(lines[data_start:]):
-        if line not in seen:
-            seen.add(line)
-            unique_cards.append(line)
+        parts = line.rstrip('\n').split('\t')
+        if len(parts) >= 3:
+            name = parts[0]
+            image_file = parts[2]  # format: "set_code/collector_number"
+            # Create key from name and image_file
+            key = (name, image_file)
+            
+            if key not in seen_keys:
+                seen_keys.add(key)
+                unique_cards.append(line)
     
     # Reverse back to original order
     unique_cards.reverse()
