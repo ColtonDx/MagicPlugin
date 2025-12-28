@@ -31,19 +31,19 @@ from io import BytesIO
 def load_config():
     """
     Load configuration from config.txt in the same directory as the script.
-    Returns tuple: (output_folder, set_codes_list, download_images)
+    Returns tuple: (output_file, set_codes_list, download_images)
     """
     config_file = Path(__file__).parent / "config.txt"
     
     # Default values
-    output_folder = "sets"
+    output_file = "custom.txt"
     set_codes = []
     download_images = False
     
     if not config_file.exists():
         print(f"WARNING: config.txt not found at {config_file}")
-        print("Using default values: output_folder=sets, set_codes=[], download_images=False")
-        return output_folder, set_codes, download_images
+        print("Using default values: output_file=custom.txt, set_codes=[], download_images=False")
+        return output_file, set_codes, download_images
     
     try:
         with open(config_file, "r", encoding="utf-8") as f:
@@ -60,8 +60,8 @@ def load_config():
                 key = key.strip()
                 value = value.strip()
                 
-                if key == "output_folder":
-                    output_folder = value
+                if key == "output_file":
+                    output_file = value
                 elif key == "set_codes":
                     # Parse comma-separated set codes
                     set_codes = [code.strip() for code in value.split(",") if code.strip()]
@@ -70,13 +70,13 @@ def load_config():
     except Exception as e:
         print(f"ERROR reading config.txt: {e}")
         print("Using default values")
-        return "sets", [], False
+        return "custom.txt", [], False
     
-    return output_folder, set_codes, download_images
+    return output_file, set_codes, download_images
 
 
 # Global variables loaded from config
-OUTPUT_FOLDER, SET_CODES, DOWNLOAD_IMAGES = load_config()
+OUTPUT_FILE, SET_CODES, DOWNLOAD_IMAGES = load_config()
 
 
 def convert_mana_cost(cost_string):
@@ -368,13 +368,17 @@ def format_back_card(card, set_code):
 
 def write_set_file(set_code, cards):
     """
-    Write formatted cards to a set file.
-    Uses OUTPUT_FOLDER from config.txt.
-    Otherwise, creates a new file named {set_code}.txt
+    Write formatted cards to the output file specified in config.txt.
+    Appends cards from all sets to the same file.
     Returns tuple: (output_file, was_newly_created)
     """
-    output_dir = Path(OUTPUT_FOLDER)
+    output_dir = Path("sets")
     output_dir.mkdir(exist_ok=True)
+    
+    output_file = output_dir / OUTPUT_FILE
+    
+    # Check if file exists
+    file_exists = output_file.exists()
     
     # Sort cards by collector number (numerically aware)
     def sort_key(card):
@@ -396,12 +400,6 @@ def write_set_file(set_code, cards):
     
     cards = sorted(cards, key=sort_key)
     
-    # Create output file named after the set code
-    output_file = output_dir / f"{set_code.lower()}.txt"
-    
-    # Check if file exists
-    file_exists = output_file.exists()
-    
     with open(output_file, "a" if file_exists else "w", encoding="utf-8") as f:
         # Write header and blank lines only if creating new file
         if not file_exists:
@@ -419,6 +417,7 @@ def write_set_file(set_code, cards):
     
     if file_exists:
         print(f"Appended {len(cards)} cards to {output_file}")
+
     else:
         print(f"Created {output_file} with {len(cards)} cards")
     
@@ -656,7 +655,7 @@ def main():
         sys.exit(1)
     
     print(f"Fetching {len(SET_CODES)} set(s): {', '.join(SET_CODES)}")
-    print(f"Output folder: {OUTPUT_FOLDER}")
+    print(f"Output file: sets/{OUTPUT_FILE}")
     print(f"Download images: {DOWNLOAD_IMAGES}\n")
     
     for i, set_code in enumerate(SET_CODES, 1):

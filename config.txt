@@ -1,6 +1,6 @@
 # Magic: The Gathering Lackey CCG Plugin Config
-# Output folder where set files will be written (relative to script location)
-output_folder=sets
+# Output file where card lists will be appended (relative to script location, in ./sets/ folder)
+output_file=custom.txt
 
 # Set codes to fetch and process (comma-separated, e.g., tla,lci,eld)
 set_codes=tla,lci
