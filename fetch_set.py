@@ -450,16 +450,19 @@ def get_image_url(card):
     """
     Get the image URL for a card.
     Handles normal cards and double-faced cards.
+    Prefers small images, but falls back to normal if small is not available.
     """
     # For double-faced cards
     if "card_faces" in card:
         # Use the first face
         if card["card_faces"][0].get("image_uris"):
-            return card["card_faces"][0]["image_uris"].get("normal")
+            image_uris = card["card_faces"][0]["image_uris"]
+            return image_uris.get("small") or image_uris.get("normal")
     
     # For normal cards
     if "image_uris" in card:
-        return card["image_uris"].get("normal")
+        image_uris = card["image_uris"]
+        return image_uris.get("small") or image_uris.get("normal")
     
     return None
 
@@ -493,7 +496,9 @@ def download_card_image(card, set_code, base_path):
         success = True
         for i, face in enumerate(card["card_faces"]):
             suffix = chr(97 + i)  # 'a', 'b', 'c', etc.
-            image_url = face.get("image_uris", {}).get("normal")
+            image_uris = face.get("image_uris", {})
+            # Prefer small images, fall back to normal
+            image_url = image_uris.get("small") or image_uris.get("normal")
             
             if not image_url:
                 success = False
