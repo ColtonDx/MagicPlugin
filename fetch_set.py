@@ -540,13 +540,14 @@ def download_card_image(card, set_code, base_path):
         if file_path.exists():
             return True
         
-        # Download image
+        # Download and resize image
         try:
             response = requests.get(image_url, timeout=30)
             response.raise_for_status()
             
-            with open(file_path, "wb") as f:
-                f.write(response.content)
+            image = Image.open(BytesIO(response.content))
+            image = image.resize((312, 445), Image.Resampling.LANCZOS)
+            image.save(file_path, "JPEG")
             
             return True
             
