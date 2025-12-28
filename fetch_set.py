@@ -6,22 +6,28 @@ Example: python fetch_set.py tla
 Example: python fetch_set.py tla --download-images
 """
 
-import requests
 import sys
 import os
 import time
 from pathlib import Path
 
-# Auto-install PIL if missing
-try:
-    from PIL import Image
-    from io import BytesIO
-except ImportError:
-    import subprocess
-    print("Installing Pillow (PIL)...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "Pillow"])
-    from PIL import Image
-    from io import BytesIO
+# Auto-install missing dependencies
+required_packages = {
+    "requests": "requests",
+    "PIL": "Pillow",
+}
+
+for module_name, package_name in required_packages.items():
+    try:
+        __import__(module_name)
+    except ImportError:
+        print(f"Installing {package_name}...")
+        import subprocess
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+
+import requests
+from PIL import Image
+from io import BytesIO
 
 # Output file to write cards to (in ./sets/)
 OUTPUT_FILE = "custom.txt"  # Set this to a filename to write to existing file, e.g., "custom.txt"
