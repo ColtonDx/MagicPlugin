@@ -284,7 +284,7 @@ def update_list_file(set_code):
 
 def deduplicate_output_file(output_file):
     """
-    Deduplicate lines in the output file.
+    Deduplicate lines in the output file, keeping the latest entries.
     Preserves header (first line) and blank lines, deduplicates card data.
     """
     with open(output_file, "r", encoding="utf-8") as f:
@@ -303,13 +303,16 @@ def deduplicate_output_file(output_file):
         blank_lines.append(lines[data_start])
         data_start += 1
     
-    # Deduplicate card data while preserving order
+    # Deduplicate card data while preserving order, keeping latest entries
     seen = set()
     unique_cards = []
-    for line in lines[data_start:]:
+    for line in reversed(lines[data_start:]):
         if line not in seen:
             seen.add(line)
             unique_cards.append(line)
+    
+    # Reverse back to original order
+    unique_cards.reverse()
     
     # Write back
     with open(output_file, "w", encoding="utf-8") as f:
