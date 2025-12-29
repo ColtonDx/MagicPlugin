@@ -205,13 +205,14 @@ def get_sound(type_line):
 def fetch_set_cards(set_code):
     """
     Fetch all cards from a specific set using Scryfall API.
+    Uses unique=prints to get all versions with different collector numbers.
     """
     logger.info(f"Fetching cards for set: {set_code}")
     
     url = f"https://api.scryfall.com/cards/search"
     params = {
         "q": f"set:{set_code}",
-        "unique": "cards"
+        "unique": "prints"
     }
     
     all_cards = []
